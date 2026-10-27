@@ -595,29 +595,40 @@ function drawMall(){
   ctx.beginPath(); ctx.moveTo(W/2,14); ctx.lineTo(W/2,H-14); ctx.moveTo(14,H/2); ctx.lineTo(W-14,H/2); ctx.stroke();
   ctx.lineWidth = 1; ctx.strokeStyle = bb ? '#1c1c1c' : 'rgba(56,86,145,.5)';
   [[60,70,90,54],[210,60,120,44],[620,66,130,50],[800,180,96,60],[64,400,110,56],[250,470,120,48],[610,420,90,90],[780,400,110,52],
-   [70,190,70,50],[830,60,70,60]].forEach(([x,y,w,h]) => ctx.strokeRect(x,y,w,h));
-  /* etiquetas + contador + cobertura */
+   [70,190,70,50]].forEach(([x,y,w,h]) => ctx.strokeRect(x,y,w,h));
+  /* etiquetas + contador + cobertura: cada zona anclada a su esquina EXTERIOR
+     del plano, lejos del dispositivo central (x 365-595 · y 185-417), para que
+     la imagen del equipo nunca tape un nombre (antes Parking quedaba detrás). */
+  const anchors = [
+    { x: 24,   y: 22,   align: 'left'  },  /* Food Court   ↖ */
+    { x: W-24, y: 22,   align: 'right' },  /* Tienda Norte ↗ */
+    { x: 24,   y: H-86, align: 'left'  },  /* Entrada      ↙ */
+    { x: W-24, y: H-86, align: 'right' }   /* Parking      ↘ */
+  ];
   ctx.textBaseline = 'top';
   G.zones.forEach((z,i) => {
-    const [x,y] = rects[i]; const lx = x + 24, ly = y + 22;
+    const a = anchors[i], lx = a.x, ly = a.y, right = a.align === 'right';
+    ctx.textAlign = a.align;
     ctx.font = '700 15px system-ui,sans-serif';
-    ctx.fillStyle = bb ? '#9ca3af' : '#cbd5e1'; ctx.textAlign = 'left';
+    ctx.fillStyle = bb ? '#9ca3af' : '#cbd5e1';
     ctx.fillText(z.name, lx, ly);
     ctx.font = '700 13px ui-monospace,monospace';
     ctx.fillStyle = bb ? '#e5e7eb' : '#7dd3fc';
     ctx.fillText('GENTE: ' + z.count, lx, ly + 21);
-    /* cobertura */
-    const bw = 108, cov = z.coverage;
-    ctx.fillStyle = 'rgba(2,8,20,.65)'; rr(lx, ly+42, bw, 8, 4); ctx.fill();
+    /* cobertura (la barra se alinea con el borde exterior de su etiqueta) */
+    const bw = 108, cov = z.coverage, barX = right ? lx - bw : lx;
+    ctx.fillStyle = 'rgba(2,8,20,.65)'; rr(barX, ly+42, bw, 8, 4); ctx.fill();
     ctx.fillStyle = bb ? '#9ca3af' : (cov > 45 ? '#22d3ee' : cov > 20 ? '#facc15' : '#ef4444');
-    if(cov > 0){ rr(lx, ly+42, bw*cov/100, 8, 4); ctx.fill(); }
+    if(cov > 0){ rr(barX, ly+42, bw*cov/100, 8, 4); ctx.fill(); }
     ctx.font = '600 9px system-ui,sans-serif'; ctx.fillStyle = bb ? '#6b7280' : '#64748b';
     ctx.fillText('COBERTURA', lx, ly + 53);
     if(cov < 20 && !bb && G.running){
       ctx.font = '800 12px system-ui,sans-serif'; ctx.fillStyle = (Math.sin(performance.now()/130) > 0) ? '#f87171' : '#7f1d1d';
-      ctx.fillText('⚠ SIN COBERTURA', lx + 118, ly + 40);
+      if(right){ ctx.textAlign = 'right'; ctx.fillText('⚠ SIN COBERTURA', barX - 10, ly + 40); ctx.textAlign = a.align; }
+      else ctx.fillText('⚠ SIN COBERTURA', lx + 118, ly + 40);
     }
   });
+  ctx.textAlign = 'left';
 }
 
 function drawOrb(o){
@@ -741,8 +752,10 @@ function drawBlackbox(now){
   /* batería */
   ctx.font = '700 14px ui-monospace,monospace'; ctx.textAlign = 'left';
   ctx.fillStyle = '#fff';
-  ctx.fillText('🔋 BATERÍA: ' + Math.round(G.battery) + '% · 48H · LoRa MESH', 24, H - 38);
-  ctx.fillText('GENTE ATRAPADA: ' + G.gente, W - 268, H - 38);
+  /* centrado abajo: no choca con las etiquetas de Entrada/Parking en las esquinas */
+  ctx.textAlign = 'center';
+  ctx.fillText('🔋 BATERÍA: ' + Math.round(G.battery) + '% · 48H · LoRa MESH · GENTE ATRAPADA: ' + G.gente, W/2, H - 38);
+  ctx.textAlign = 'left';
 }
 
 function draw(now){
