@@ -178,11 +178,11 @@
         <h2>🛰️ Un mall. 90 segundos. Un sismo MAG 5.4 en camino.</h2>
         <p>Eres el nodo <b style="color:#fff">SISMO-ALERT</b> del centro. Cuenta a las personas reales, filtra las MAC falsas, reacciona a la Onda P y —cuando se vaya la luz— envía por LoRa el dato que salvará vidas: <b style="color:#fff">cuánta gente quedó atrapada</b>.</p>
         <div class="howto">
-          <div><span class="dot blue"></span><b>Captura azules:</b> personas reales (MAC válida). Mueve el escáner con el ratón, el dedo o <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">→</span>.</div>
+          <div><span class="dot blue"></span><b>Captura azules:</b> personas reales (MAC válida) que entran desde los 4 lados y <b>expiran en 3–4 s</b>. Mueve el escáner con el ratón, el dedo o <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">→</span>.</div>
           <div><span class="dot red"></span><b>Deja pasar rojas:</b> MACs aleatorias falsas (iOS). Si las tocas → falso positivo y cae tu precisión IA.</div>
           <div>🟡 <b>Onda P = 3 s de ventaja:</b> anillo amarillo → pulsa <b>PRE-ALERTA</b> (o <span class="kbd">Espacio</span>) para ganar bonus ×2. En la Onda S hay <b>interferencia</b>: escáner más chico, señales que parpadean/pierden color, polvo y grietas en el plano.</div>
           <div>🗺️ <b>Balancea las 4 zonas</b> (Food Court, Tienda Norte, Entrada, Parking): si una se queda sin cobertura, pierdes puntos.</div>
-          <div>⬛ <b>Modo caja negra:</b> tras el apagón, traza la línea LoRa uniendo los 3 nodos hasta RESCATE.</div>
+          <div>⬛ <b>Modo caja negra:</b> tras el apagón, une los 3 nodos hasta RESCATE en ruta <b>zigzag</b> (cambia cada partida) en solo <b>6 segundos</b>.</div>
           <div>⏱️ <b>El anillo LED es el estado:</b> <span style="color:var(--cyan)">cian</span> = OK · <span style="color:var(--yellow)">amarillo</span> = Onda P · <span style="color:var(--red)">rojo</span> = Onda S · blanco = batería/e-ink.</div>
         </div>
         <button class="btn-big" id="btnStart" type="button">▶&nbsp; INICIAR ESCANEO (90 s)</button>
@@ -333,7 +333,7 @@ function freshState(){
     mult:1, multUntil:0, preHits:0,
     orbs:[], spawnIn:0, shake:0, ringFlashUntil:0, ringFlashColor:'#34d399',
     zones: ZONE_NAMES.map(n=>({name:n, count:0, coverage:100})),
-    scanner:{ x:W/2, y:H-130, r:54, seen:false },
+    scanner:{ x:W/2, y:H-130, r:48, seen:false },
     keys:{}, fired:{}, pWin:null, sWave:null,
     blackbox:null, battery:100, loraDone:false, endAt:null,
     pointerDown:false, trail:[], particles:[], dust:[], cracks:[]
@@ -381,11 +381,18 @@ function resolvePWave(success){
 function startBlackbox(){
   G.orbs = []; G.battery = 100;
   const N = (x,y,label)=>({x,y,label,linked:false});
-  G.blackbox = { startedAt: G.t, idx:0,
-    nodes:[ N(150,130,'NODO 1'), N(810,120,'NODO 2'), N(825,470,'NODO 3'), N(120,485,'✚ RESCATE') ] };
+  const rnd = (a,b) => a + Math.random() * (b - a);
+  /* Ruta en ZIGZAG con posiciones irregulares que cambian en cada partida
+     (nada de filas/columnas rectas): arriba-izq. -> abajo-centro-der. ->
+     arriba-der. -> RESCATE abajo-izq. Solo 6 s de ventana LoRa. */
+  G.blackbox = { startedAt: G.t, deadline: G.t + 6, idx:0,
+    nodes:[ N(rnd(120,270), rnd(95,175),  'NODO 1'),
+            N(rnd(600,690), rnd(430,500), 'NODO 2'),
+            N(rnd(720,855), rnd(95,175),  'NODO 3'),
+            N(rnd(105,245), rnd(430,500), '✚ RESCATE') ] };
   document.body.classList.add('blackout');
   canvas.style.filter = 'grayscale(1) contrast(1.15)';
-  setBanner('⬛ MODO CAJA NEGRA · BATERÍA 48H · Arrastra desde el dispositivo uniendo NODO 1 → 2 → 3 → ✚ RESCATE para enviar por LoRa: GENTE ATRAPADA', 'blackbox');
+  setBanner('⬛ MODO CAJA NEGRA · ⏱ ¡SOLO 6 SEGUNDOS de ventana LoRa! Une NODO 1 → 2 → 3 → ✚ RESCATE (ruta en zigzag) para enviar: GENTE ATRAPADA', 'blackbox');
   sfx.fail(); setTimeout(()=>sfx.link(), 350);
 }
 function endGame(){
@@ -469,17 +476,20 @@ document.addEventListener('visibilitychange', () => { if(document.hidden && G.ru
    desde arriba, las zonas superiores capturarían casi todo primero.
    Carriles que evitan la columna/fila del dispositivo central. */
 function spawnOrb(){
-  const red = Math.random() < (G.t < 30 ? 0.34 : 0.44);
-  const sp = 92 + G.t*1.15 + Math.random()*46;
+  /* MODO PESADILLA: más señales falsas, más velocidad y vida útil de solo
+     3-4 s por circulito: si no lo capturas (o lo dejas filtrar) a tiempo, expira. */
+  const red = Math.random() < (G.t < 30 ? 0.38 : 0.48);
+  const sp = 150 + G.t*1.5 + Math.random()*55;
+  const ttl = G.t < 30 ? 3.4 + Math.random()*0.6 : 3.0 + Math.random()*0.7;
   const laneX = () => Math.random() < 0.5 ? 34 + Math.random()*300 : 626 + Math.random()*300; /* columnas laterales */
   const laneY = () => Math.random() < 0.5 ? 36 + Math.random()*124 : 440 + Math.random()*124; /* filas sup./inf. */
   const dir = Math.floor(Math.random() * 4); /* 0 abajo↓ · 1 arriba↑ · 2 derecha→ · 3 izquierda← */
   let x, y, vx = 0, vy = 0;
   if(dir === 0){ x = laneX(); y = -24;   vy =  sp; }
   else if(dir === 1){ x = laneX(); y = H+24; vy = -sp; }
-  else if(dir === 2){ x = -24;   y = laneY(); vx =  sp; }
-  else { x = W+24; y = laneY(); vx = -sp; }
-  G.orbs.push({ x, y, vx, vy, r:14 + Math.random()*5, red, wob: Math.random()*Math.PI*2 });
+  else if(dir === 2){ x = -24;   y = laneY(); vx =  sp * 1.35; } /* el eje horizontal es más largo */
+  else { x = W+24; y = laneY(); vx = -sp * 1.35; }
+  G.orbs.push({ x, y, vx, vy, age:0, ttl, r:14 + Math.random()*5, red, wob: Math.random()*Math.PI*2 });
 }
 /* Grietas en el plano cuando golpea la Onda S (persisten en modo caja negra) */
 function makeCracks(n){
@@ -535,7 +545,7 @@ function update(dt){
   if(G.keys['ArrowUp'])    s.y -= KS; if(G.keys['ArrowDown'])  s.y += KS;
   s.x = clamp(s.x, 20, W-20); s.y = clamp(s.y, 20, H-20);
   /* INTERFERENCIA SÍSMICA: durante la Onda S el radio de detección se encoge */
-  const targetR = G.sWave ? (G.sWave.big ? 28 : 34) : 54;
+  const targetR = G.sWave ? (G.sWave.big ? 24 : 30) : 48;
   s.r += (targetR - s.r) * Math.min(1, dt * 5);
 
   /* Cobertura por zonas */
@@ -549,12 +559,12 @@ function update(dt){
   /* Orbes */
   if(!G.blackbox){
     G.spawnIn -= dt;
-    const interval = t < 30 ? 0.62 : 0.46;
+    const interval = t < 30 ? 0.50 : 0.38;
     if(G.spawnIn <= 0){ spawnOrb(); G.spawnIn = interval * (0.75 + Math.random()*0.5); }
   }
   for(let i = G.orbs.length-1; i >= 0; i--){
     const o = G.orbs[i];
-    o.wob += dt*3;
+    o.wob += dt*3; o.age += dt;
     /* movimiento según su dirección de entrada + vaivén perpendicular */
     const boost = G.sWave ? 1.25 : 1;
     o.x += o.vx * boost * dt; o.y += o.vy * boost * dt;
@@ -569,7 +579,7 @@ function update(dt){
       }
       G.orbs.splice(i,1); continue;
     }
-    if(o.y > H + 26 || o.y < -26 || o.x < -26 || o.x > W + 26){ /* sale por cualquier lado */
+    if(o.age >= o.ttl || o.y > H + 26 || o.y < -26 || o.x < -26 || o.x > W + 26){ /* expira o sale por cualquier lado */
       if(o.red){ G.filtered++; G.score += 10; sfx.filter(); }
       else{ G.missed++; G.score = Math.max(0, G.score - 25); }
       G.orbs.splice(i,1);
@@ -591,10 +601,11 @@ function update(dt){
 
   /* Caja negra: batería + ruta LoRa */
   if(G.blackbox){
-    G.battery = Math.max(80, 100 - (t - G.blackbox.startedAt) * 0.59);
+    G.battery = Math.max(80, 100 - (t - G.blackbox.startedAt) * 1.8);
     const bb = G.blackbox, target = bb.nodes[bb.idx];
+    if(!G.loraDone && t >= bb.deadline) endGame(); /* se cerró la ventana LoRa de 6 s */
     if(target){
-      const near = (p) => Math.hypot(p.x-target.x, p.y-target.y) < 48;
+      const near = (p) => Math.hypot(p.x-target.x, p.y-target.y) < 32; /* enlace más preciso */
       if(near(s) || G.trail.some(near)){
         target.linked = true; bb.idx++; G.score += 250; burst(target.x,target.y,'#ffffff',16); sfx.link();
         if(bb.idx >= bb.nodes.length){
@@ -686,7 +697,11 @@ function drawOrb(o, now){
   const lost = !!G.sWave && Math.sin(now/90 + o.wob*2.7) < -0.72;
   const c = lost ? '#94a3b8' : (o.red ? '#ef4444' : '#38bdf8');
   ctx.save();
-  if(G.sWave) ctx.globalAlpha = 0.45 + 0.55 * Math.abs(Math.sin(now/70 + o.wob*3));
+  /* se desvanece en su último tramo de vida (aviso visual de expiración) */
+  const remainT = o.ttl - o.age;
+  let alpha = remainT < 0.85 ? clamp(remainT / 0.85, 0.16, 1) : 1;
+  if(G.sWave) alpha *= 0.45 + 0.55 * Math.abs(Math.sin(now/70 + o.wob*3));
+  ctx.globalAlpha = alpha;
   ctx.shadowColor = c; ctx.shadowBlur = 16;
   ctx.fillStyle = c; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7); ctx.fill();
   ctx.shadowBlur = 0;
@@ -805,6 +820,11 @@ function drawBlackbox(now){
     ctx.font = '800 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.fillStyle = '#fff'; ctx.fillText(n.label + (n.linked ? ' ✓' : ''), n.x, n.y + pulse + 7);
   });
+  /* cuenta regresiva de la ventana LoRa (parpadea en rojo los últimos 2 s) */
+  const remainBB = Math.max(0, bb.deadline - G.t);
+  ctx.font = '800 26px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = (!G.loraDone && remainBB < 2 && Math.sin(now/120) > 0) ? '#f87171' : '#ffffff';
+  ctx.fillText(G.loraDone ? '✓ DATO ENVIADO' : '⏱ VENTANA LoRa: ' + remainBB.toFixed(1) + ' s', W/2, 92);
   /* batería */
   ctx.font = '700 14px ui-monospace,monospace'; ctx.textAlign = 'left';
   ctx.fillStyle = '#fff';
