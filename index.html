@@ -3,906 +3,203 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SISMO-ALERT — El juego · Detección de personas + alerta sísmica IoT</title>
-<meta name="description" content="Juego web de 90 segundos que demuestra el dispositivo SISMO-ALERT: filtrado IA de MACs falsas, alerta temprana por Onda P, red de nodos por zonas y modo caja negra con batería 48h + LoRa Mesh.">
-<meta property="og:title" content="SISMO-ALERT — El juego">
-<meta property="og:description" content="90 segundos. Un sismo MAG 5.4. ¿Puede tu escáner contar a todas las personas antes del apagón?">
+<title>SISMO-ALERT CyT 3D — Operario VR · Edificio CyT Universidad Nacional</title>
+<meta name="description" content="Juego inmersivo 3D/WebXR en el edificio CyT de la Universidad Nacional: sniffers de techo con voz en español detectan personas y el terremoto; el gateway de un poste de luz guarda cuánta gente había y cuánta podría seguir dentro.">
+<meta property="og:title" content="SISMO-ALERT CyT 3D — Operario VR">
 <meta property="og:image" content="https://nicolashg2004.github.io/juegoDiseno/modelo.jpg">
-<meta property="og:type" content="website">
-<meta name="theme-color" content="#0b1220">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='6' width='52' height='52' rx='14' fill='%23f8fafc'/%3E%3Crect x='6' y='6' width='52' height='52' rx='14' fill='none' stroke='%2322d3ee' stroke-width='4'/%3E%3Ccircle cx='32' cy='30' r='11' fill='%2394a3b8'/%3E%3Crect x='20' y='44' width='24' height='9' rx='2' fill='%230b1220'/%3E%3C/svg%3E">
-<style>
-  :root{
-    --bg:#0b1220; --bg2:#0f1a2e; --panel:#111e33; --line:#223453;
-    --ink:#e8eef7; --muted:#93a4bd; --cyan:#22d3ee; --blue:#38bdf8;
-    --red:#f87171; --red2:#ef4444; --yellow:#facc15; --green:#34d399;
-    --eink:#f4f1e6; --radius:16px;
-    --mono:ui-monospace,'Cascadia Mono',SFMono-Regular,Menlo,Consolas,monospace;
-    --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{background:radial-gradient(1100px 550px at 50% -80px,#173058 0%,var(--bg) 55%) fixed var(--bg);
-       color:var(--ink);font-family:var(--sans);line-height:1.5;transition:background .6s}
-  body.blackout{background:#000}
-  body.blackout .dim-when-dark{opacity:.25;filter:grayscale(1)}
-  a{color:var(--cyan)}
-  .wrap{max-width:1060px;margin:0 auto;padding:0 16px}
-
-  /* ---------- Header ---------- */
-  header{padding:22px 0 6px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .logo{display:flex;align-items:center;gap:12px}
-  .logo-mark{width:46px;height:46px;border-radius:13px;background:#f8fafc;position:relative;flex:none;
-    box-shadow:inset 0 0 0 3px var(--cyan),0 0 18px rgba(34,211,238,.45)}
-  .logo-mark::before{content:"";position:absolute;inset:0;margin:auto;width:18px;height:18px;border-radius:50%;
-    background:radial-gradient(circle at 35% 35%,#cbd5e1,#64748b);top:-8px}
-  .logo-mark::after{content:"";position:absolute;left:0;right:0;margin:auto;bottom:7px;width:22px;height:7px;border-radius:2px;background:#0b1220}
-  h1{font-size:clamp(1.45rem,3.4vw,2.1rem);letter-spacing:.06em;line-height:1.05}
-  h1 .accent{color:var(--cyan)}
-  .subtitle{color:var(--muted);font-size:.92rem}
-  .header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
-  .btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);
-    border-radius:10px;padding:8px 14px;font:600 .88rem var(--sans);cursor:pointer;text-decoration:none;
-    display:inline-flex;align-items:center;gap:7px;transition:.15s}
-  .btn:hover{border-color:var(--cyan);color:#fff}
-  .btn:focus-visible,button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-
-  /* ---------- HUD ---------- */
-  .hud{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0 8px}
-  .chip{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center;min-width:0}
-  .chip .k{display:block;font:700 .62rem var(--sans);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
-  .chip .v{display:block;font:700 clamp(1rem,2.6vw,1.35rem) var(--mono);line-height:1.25;white-space:nowrap}
-  .chip.alert{border-color:var(--red2);box-shadow:0 0 0 1px var(--red2),0 0 16px rgba(239,68,68,.35)}
-  .chip.boost{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}
-  #hudPrecision.good{color:var(--green)} #hudPrecision.warn{color:var(--yellow)} #hudPrecision.bad{color:var(--red)}
-
-  .timerbar{height:8px;background:#0a1526;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:8px}
-  #timerFill{height:100%;width:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .2s linear}
-  #timerFill.danger{background:linear-gradient(90deg,var(--red2),#f97316)}
-
-  #banner{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;gap:10px;
-    border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:8px 14px;
-    font-weight:700;font-size:clamp(.85rem,2.2vw,1.02rem);margin-bottom:10px}
-  #banner.pwave{background:#3a2f05;border-color:var(--yellow);color:#fde68a;animation:pulseB .5s infinite alternate}
-  #banner.swave{background:#3d0a0a;border-color:var(--red2);color:#fecaca;animation:pulseB .25s infinite alternate}
-  #banner.success{background:#052e22;border-color:var(--green);color:#a7f3d0}
-  #banner.blackbox{background:#050505;border-color:#e5e5e5;color:#fff;font-family:var(--mono);letter-spacing:.04em}
-  @keyframes pulseB{from{filter:brightness(.92)}to{filter:brightness(1.25)}}
-
-  /* ---------- Canvas / game ---------- */
-  .game-shell{position:relative;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#0a1526;
-    box-shadow:0 18px 50px rgba(0,0,0,.45)}
-  canvas{display:block;width:100%;height:auto;aspect-ratio:960/600;touch-action:none;cursor:crosshair}
-  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;
-    background:rgba(4,10,20,.78);backdrop-filter:blur(3px);z-index:5}
-  .overlay[hidden]{display:none}
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);max-width:640px;width:100%;
-    padding:22px;max-height:100%;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-  .card h2{font-size:clamp(1.3rem,3vw,1.8rem);margin-bottom:6px}
-  .card p{color:var(--muted);font-size:.95rem;margin-bottom:10px}
-  .hero-img{width:100%;height:190px;object-fit:cover;object-position:50% 45%;border-radius:12px;border:1px solid var(--line);margin-bottom:12px;display:block}
-  .howto{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-  .howto div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:.85rem}
-  .howto b{color:#fff}
-  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin-right:5px}
-  .dot.blue{background:var(--blue);box-shadow:0 0 8px var(--blue)} .dot.red{background:var(--red2);box-shadow:0 0 8px var(--red2)}
-  .btn-big{background:linear-gradient(180deg,#0ea5c6,#0284c7);border:1px solid #38bdf8;color:#fff;width:100%;
-    font:800 1.05rem var(--sans);letter-spacing:.05em;border-radius:12px;padding:14px;cursor:pointer;transition:.15s}
-  .btn-big:hover{filter:brightness(1.15)}
-  .kbd{font:700 .78rem var(--mono);background:#0a1526;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:1px 7px}
-
-  /* E-ink final display */
-  .eink{background:var(--eink);color:#111;border-radius:10px;padding:22px 20px;font-family:var(--mono);
-    border:2px solid #111;box-shadow:inset 0 0 0 4px #fff, inset 0 0 40px rgba(0,0,0,.08);margin-bottom:14px}
-  .eink .row{display:flex;justify-content:space-between;gap:12px;font-size:clamp(1.15rem,3.4vw,1.7rem);font-weight:700;letter-spacing:.03em;padding:3px 0}
-  .eink .row + .row{border-top:2px dashed rgba(0,0,0,.25)}
-  .eink small{display:block;text-align:center;margin-top:10px;font-size:.72rem;letter-spacing:.14em;color:#444}
-  .breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-  .breakdown .chip .v{font-size:1.1rem}
-  .rating{text-align:center;font:800 1.05rem var(--sans);letter-spacing:.08em;color:var(--yellow);margin-bottom:14px;text-transform:uppercase}
-
-  /* Controls */
-  .controls{display:flex;gap:10px;margin:12px 0 4px;flex-wrap:wrap;align-items:stretch}
-  #btnPreAlert{flex:1 1 260px;font:800 clamp(1rem,2.8vw,1.25rem) var(--sans);letter-spacing:.06em;border-radius:14px;
-    border:2px solid #57534e;background:#1c1917;color:#78716c;padding:16px;cursor:not-allowed;transition:.15s}
-  #btnPreAlert.armed{background:linear-gradient(180deg,#facc15,#eab308);border-color:#fef08a;color:#1c1005;cursor:pointer;
-    box-shadow:0 0 26px rgba(250,204,21,.55);animation:pulseB .35s infinite alternate}
-  #btnPreAlert.armed:active{transform:scale(.98)}
-  .controls .btn{padding:0 18px;border-radius:14px;font-size:.95rem}
-  .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:.85rem;margin:8px 2px 0}
-
-  /* ---------- pitch sections ---------- */
-  section.pitch{padding:34px 0 6px}
-  section.pitch h2{font-size:clamp(1.35rem,3vw,1.9rem);margin-bottom:6px}
-  section.pitch .lead{color:var(--muted);max-width:760px;margin-bottom:18px}
-  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:12px}
-  .feature{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
-  .feature .ico{font-size:1.5rem;display:block;margin-bottom:8px}
-  .feature h3{font-size:1.02rem;margin-bottom:6px}
-  .feature p{color:var(--muted);font-size:.9rem}
-  .feature .tag{display:inline-block;margin-top:10px;font:700 .66rem var(--sans);letter-spacing:.1em;text-transform:uppercase;
-    color:var(--cyan);border:1px solid rgba(34,211,238,.4);border-radius:99px;padding:3px 9px}
-  .device-shot{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:center;margin-top:10px}
-  .device-shot img{width:100%;border-radius:var(--radius);border:1px solid var(--line);display:block}
-  .specs{list-style:none;display:grid;gap:8px}
-  .specs li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:.93rem}
-  .specs b{font-family:var(--mono);color:var(--cyan)}
-  footer{color:var(--muted);font-size:.86rem;padding:34px 0 40px;text-align:center}
-  @media (max-width:680px){
-    .hud{grid-template-columns:repeat(3,1fr)}
-    .howto{grid-template-columns:1fr}
-    .device-shot{grid-template-columns:1fr}
-    .hero-img{height:140px}
-    .header-actions{margin-left:0}
-  }
-  @media (prefers-reduced-motion:reduce){ #banner.pwave,#banner.swave,#btnPreAlert.armed{animation:none} }
-</style>
+<meta name="theme-color" content="#07111f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='6' width='52' height='52' rx='14' fill='%23f8fafc'/%3E%3Crect x='6' y='6' width='52' height='52' rx='14' fill='none' stroke='%2322d3ee' stroke-width='4'/%3E%3Ccircle cx='32' cy='30' r='11' fill='%2394a3b8'/%3E%3Crect x='20' y='44' width='24' height='9' rx='2' fill='%2307111f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/immersive.css">
 </head>
 <body>
-<div class="wrap">
-
-  <header>
-    <div class="logo">
-      <div class="logo-mark" aria-hidden="true"></div>
-      <div>
-        <h1>SISMO<span class="accent">-ALERT</span></h1>
-        <p class="subtitle">El juego de 90 segundos que demuestra el dispositivo · Conteo de personas + alerta sísmica IoT</p>
-      </div>
-    </div>
-    <div class="header-actions dim-when-dark">
-      <button class="btn" id="btnSound" type="button" aria-pressed="true">🔊 Sonido</button>
-      <a class="btn" href="https://github.com/NicolasHG2004/juegoDiseno" target="_blank" rel="noopener">⌥ GitHub</a>
-    </div>
-  </header>
-
-  <!-- HUD -->
-  <div class="hud dim-when-dark" aria-label="Marcadores del juego">
-    <div class="chip" id="chipTime"><span class="k">Tiempo</span><span class="v" id="hudTime">90.0</span></div>
-    <div class="chip" id="chipScore"><span class="k">Puntos</span><span class="v" id="hudScore">0</span></div>
-    <div class="chip"><span class="k">Gente detectada</span><span class="v" id="hudGente">0</span></div>
-    <div class="chip"><span class="k">Precisión IA</span><span class="v good" id="hudPrecision">100.0%</span></div>
-    <div class="chip"><span class="k">MACs filtradas</span><span class="v" id="hudFiltered">0</span></div>
-    <div class="chip"><span class="k">Falsos positivos</span><span class="v" id="hudFalse">0%</span></div>
+<header>
+  <div class="mark" aria-hidden="true"></div>
+  <div>
+    <h1>SISMO<span>-ALERT</span> CyT 3D</h1>
+    <div class="sub">Operario en primera persona · Edificio CyT — Universidad Nacional · WebXR / escritorio / táctil</div>
   </div>
-  <div class="timerbar dim-when-dark" aria-hidden="true"><div id="timerFill"></div></div>
-  <div id="banner" role="status" aria-live="polite">Pulsa <b>INICIAR ESCANEO</b> — tienes 90 segundos antes del sismo…</div>
+  <nav>
+    <button class="btn" id="btnVoice" type="button" aria-pressed="true">🗣️ Voz ES</button>
+    <button class="btn" id="btnSound" type="button" aria-pressed="true">🔊 Sonido</button>
+    <button class="btn primary" id="btnVR" type="button">🥽 Entrar en VR</button>
+    <a class="btn" href="clasico.html">🎮 2D clásico</a>
+  </nav>
+</header>
 
-  <!-- GAME -->
-  <div class="game-shell">
-    <canvas id="game" width="960" height="600" aria-label="Canvas del juego SISMO-ALERT"></canvas>
-
-    <!-- START -->
-    <div class="overlay" id="startScreen">
-      <div class="card">
-        <img class="hero-img" src="modelo.jpg" alt="Dispositivo SISMO-ALERT instalado en un muro: altavoz central, anillo LED cian y display e-ink que muestra GENTE: 124 / SISMICO: OK">
-        <h2>🛰️ Un mall. 90 segundos. Un sismo MAG 5.4 en camino.</h2>
-        <p>Eres el nodo <b style="color:#fff">SISMO-ALERT</b> del centro. Cuenta a las personas reales, filtra las MAC falsas, reacciona a la Onda P y —cuando se vaya la luz— envía por LoRa el dato que salvará vidas: <b style="color:#fff">cuánta gente quedó atrapada</b>.</p>
-        <div class="howto">
-          <div><span class="dot blue"></span><b>Captura azules:</b> personas reales (MAC válida) que entran desde los 4 lados y <b>expiran en 3–4 s</b>. Mueve el escáner con el ratón, el dedo o <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">→</span>.</div>
-          <div><span class="dot red"></span><b>Deja pasar rojas:</b> MACs aleatorias falsas (iOS). Si las tocas → falso positivo y cae tu precisión IA.</div>
-          <div>🟡 <b>Onda P = 3 s de ventaja:</b> anillo amarillo → pulsa <b>PRE-ALERTA</b> (o <span class="kbd">Espacio</span>) para ganar bonus ×2. En la Onda S hay <b>interferencia</b>: escáner más chico, señales que parpadean/pierden color, polvo y grietas en el plano.</div>
-          <div>🗺️ <b>Balancea las 4 zonas</b> (Food Court, Tienda Norte, Entrada, Parking): si una se queda sin cobertura, pierdes puntos.</div>
-          <div>⬛ <b>Modo caja negra:</b> tras el apagón, une los 3 nodos hasta RESCATE en ruta <b>zigzag</b> (cambia cada partida) en solo <b>6 segundos</b>.</div>
-          <div>⏱️ <b>El anillo LED es el estado:</b> <span style="color:var(--cyan)">cian</span> = OK · <span style="color:var(--yellow)">amarillo</span> = Onda P · <span style="color:var(--red)">rojo</span> = Onda S · blanco = batería/e-ink.</div>
-        </div>
-        <button class="btn-big" id="btnStart" type="button">▶&nbsp; INICIAR ESCANEO (90 s)</button>
-      </div>
+<main>
+  <section id="viewport" aria-label="Vista 3D del edificio CyT">
+    <div id="crosshair" aria-hidden="true"></div>
+    <div class="hud-top">
+      <div id="objective">🎯 Explora el CyT<small>Los sniffers del techo están contando personas y enviando datos al gateway del poste.</small></div>
+      <div id="phaseTag">MONITOREO · 0:00</div>
     </div>
-
-    <!-- END / E-INK -->
-    <div class="overlay" id="endScreen" hidden>
-      <div class="card">
-        <h2 style="text-align:center;margin-bottom:4px">⬛ Esto ve el rescatista entre los escombros:</h2>
-        <p style="text-align:center">Sin red eléctrica. Sin Wi-Fi. El display e-ink sigue encendido con el último dato.</p>
-        <div class="eink" role="img" aria-label="Display e-ink final del dispositivo">
-          <div class="row"><span>GENTE:</span><span id="einkGente">0</span></div>
-          <div class="row"><span>SISMICO:</span><span>ALERTA</span></div>
-          <div class="row"><span>BATERIA:</span><span id="einkBat">87%</span></div>
-          <div class="row"><span>LORA:</span><span id="einkLora">—</span></div>
-          <small>SISMO-ALERT · MODO CAJA NEGRA · AUTONOMÍA 48H</small>
-        </div>
-        <div class="rating" id="finalRating">—</div>
-        <div class="breakdown">
-          <div class="chip"><span class="k">Puntos</span><span class="v" id="finScore">0</span></div>
-          <div class="chip"><span class="k">Precisión IA</span><span class="v" id="finPrecision">—</span></div>
-          <div class="chip"><span class="k">Filtradas</span><span class="v" id="finFiltered">0</span></div>
-          <div class="chip"><span class="k">Falsos +</span><span class="v" id="finFalse">0</span></div>
-          <div class="chip"><span class="k">Pre-alertas</span><span class="v" id="finPre">0/2</span></div>
-          <div class="chip"><span class="k">Sin detectar</span><span class="v" id="finMissed">0</span></div>
-        </div>
-        <button class="btn-big" id="btnAgain" type="button">↻&nbsp; JUGAR DE NUEVO</button>
-      </div>
+    <div id="prompt"></div>
+    <div id="subtitle" role="status" aria-live="polite"></div>
+    <div id="einkMini">GENTE: —<br>SISMICO: OK<br>GATEWAY: —</div>
+    <div class="view-btns">
+      <button class="btn" id="btnViewBuilding" type="button">🏢 Edificio</button>
+      <button class="btn" id="btnViewPole" type="button">💡 Poste / Gateway</button>
+      <button class="btn" id="btnFreeCam" type="button" aria-pressed="false">🛸 Vista libre</button>
     </div>
-  </div>
+    <div id="joy" aria-hidden="true"><div id="joyKnob"></div></div>
+    <button id="btnTouchInteract" type="button" aria-label="Interactuar">✋</button>
 
-  <!-- CONTROLS -->
-  <div class="controls">
-    <button id="btnPreAlert" type="button" disabled>⚠ PRE-ALERTA <span style="font-weight:600;font-size:.72em">(esperando Onda P…)</span></button>
-    <button class="btn" id="btnPause" type="button">⏸ Pausa</button>
-    <button class="btn" id="btnRestart" type="button">↻ Reiniciar</button>
-  </div>
-  <p class="legend dim-when-dark">
-    <span><span class="dot blue"></span>MAC válida = persona (+100)</span>
-    <span><span class="dot red"></span>MAC falsa aleatoria → déjala pasar: la IA la filtra (+10)</span>
-    <span>🖱️/👆 mueve el escáner · <span class="kbd">Espacio</span> pre-alerta · <span class="kbd">P</span> pausa</span>
-  </p>
-
-  <!-- PITCH -->
-  <section class="pitch dim-when-dark">
-    <h2>Por qué este dispositivo es superior</h2>
-    <p class="lead">Cada mecánica del juego es una función real del equipo. No es una alarma más: es una red de nodos que <b>cuenta personas, anticipa el sismo y sigue hablando después del derrumbe</b>.</p>
-    <div class="features">
-      <article class="feature"><span class="ico">🧠</span><h3>Filtrado IA de MACs falsas</h3>
-        <p>Los celulares modernos (iOS/Android) emiten MACs Wi-Fi/BLE aleatorias. Contar señales ≠ contar personas. La IA distingue MAC válida de aleatoria y mantiene la precisión sobre 98%.</p>
-        <span class="tag">En el juego: orbes azules vs. rojos</span></article>
-      <article class="feature"><span class="ico">🌊</span><h3>Alerta temprana por Onda P</h3>
-        <p>El acelerómetro MEMS detecta la micro Onda P segundos antes de la destructiva Onda S. Esos 3 segundos activan la pre-alerta sonora y el anillo LED amarillo para evacuar.</p>
-        <span class="tag">En el juego: botón PRE-ALERTA ×2</span></article>
-      <article class="feature"><span class="ico">🗺️</span><h3>Red de nodos + mapa de calor</h3>
-        <p>Cada nodo cubre una zona (Food Court, Entrada, Tienda Norte, Parking) y reporta ocupación en tiempo real. El sistema sabe dónde está la gente, no solo cuánta hay.</p>
-        <span class="tag">En el juego: 4 zonas con cobertura</span></article>
-      <article class="feature"><span class="ico">🔋</span><h3>Caja negra: batería 48 h + LoRa Mesh</h3>
-        <p>Si se va la luz, el equipo sigue vivo 48 horas y retransmite por LoRa de nodo en nodo hasta llegar a rescate. Sin internet, sin red eléctrica, sin excusas.</p>
-        <span class="tag">En el juego: traza la ruta LoRa</span></article>
-      <article class="feature"><span class="ico">⬜</span><h3>Display e-ink post-desastre</h3>
-        <p>La pantalla e-ink conserva el último dato sin consumir energía: <span style="font-family:var(--mono);color:#fff">GENTE: 124 / SISMICO: OK</span>. Un rescatista lo lee en el muro, días después.</p>
-        <span class="tag">En el juego: tu pantalla final</span></article>
+    <div id="startOverlay">
+      <div class="start-card">
+        <h2>🚨 Eres el operario de SISMO-ALERT en el CyT</h2>
+        <p>Camina en primera persona (o en **VR**) por el edificio de Ciencia y Tecnología. Los **sniffers colgados del techo** cuentan personas por Wi-Fi/BLE y detectan el terremoto. Sin pantallas holográficas: el edificio **avisa por voz en español** 🔊.</p>
+        <ul>
+          <li>🖱️ Arrastra para mirar · <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> caminar · <span class="kbd">Shift</span> correr · <span class="kbd">Espacio</span> saltar</li>
+          <li>✋ <span class="kbd">E</span> interactuar: activar alerta, bajar el gateway, descargar datos, liberar atrapados</li>
+          <li>🥽 En VR: stick izquierdo camina, stick derecho gira, gatillo/select interactúa</li>
+          <li>💡 Tras el sismo ve al **poste de luz**, baja el gateway con la polea y descarga: <b>cuánta gente había y cuánta podría seguir dentro</b></li>
+        </ul>
+        <button class="btn primary" id="btnStart" type="button" style="width:100%;justify-content:center;padding:14px;font-size:1rem">▶ INICIAR COMO OPERARIO</button>
+      </div>
     </div>
   </section>
 
-  <section class="pitch dim-when-dark">
-    <h2>El dispositivo</h2>
-    <div class="device-shot">
-      <img src="modelo.jpg" alt="Render del dispositivo SISMO-ALERT montado en un muro de concreto en un parqueadero" loading="lazy">
-      <ul class="specs">
-        <li>📡 <b>Escaneo:</b> Wi-Fi + BLE probe requests · conteo anónimo, sin cámaras ni datos personales</li>
-        <li>🌀 <b>Sísmico:</b> acelerómetro MEMS de 3 ejes · detección Onda P / Onda S</li>
-        <li>🔊 <b>Alerta:</b> altavoz + anillo LED de estado (cian / amarillo / rojo / blanco)</li>
-        <li>⬜ <b>Display:</b> e-ink de ultra bajo consumo · último estado siempre visible</li>
-        <li>🔋 <b>Respaldo:</b> batería 48 h · radio LoRa Mesh entre nodos</li>
-        <li>🏬 <b>Despliegue:</b> nodos por zona en malls, colegios, hospitales y parqueaderos</li>
-      </ul>
-    </div>
-  </section>
+  <aside>
+    <section class="card">
+      <h2>⚙️ Configuración de la simulación</h2>
+      <div class="row">
+        <label class="lab">Sniffer principal en el piso
+          <select id="selFloor">
+            <option value="0">Piso 1 · Lobby/Cafetería</option>
+            <option value="1" selected>Piso 2 · Laboratorios</option>
+            <option value="2">Piso 3 · Aulas/Biblioteca</option>
+            <option value="3">Piso 4 · Terraza/Proyectos</option>
+          </select>
+        </label>
+        <label class="lab">Escenario
+          <select id="selScenario">
+            <option value="normal">🟢 Día normal (sin sismo)</option>
+            <option value="suave">🌿 Sismo suave 4.2</option>
+            <option value="moderado" selected>🟡 Sismo moderado 5.4</option>
+            <option value="fuerte">🟠 Terremoto fuerte 6.9</option>
+            <option value="colapso">💥 Colapso 7.8 · sniffer sepultado</option>
+            <option value="sniffer">🛠️ Sniffer principal dañado</option>
+            <option value="apagon">🔌 Apagón + sismo fuerte</option>
+            <option value="gateway">📡 Gateway sin enlace</option>
+            <option value="macs">📶 Saturación de MACs falsas</option>
+            <option value="replica">🔁 Terremoto + réplica</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="lab">Magnitud manual <span id="magVal">5.4 Mw</span>
+          <input type="range" id="rngMag" min="3" max="7.8" step="0.1" value="5.4">
+        </label>
+      </div>
+      <div class="row mag-presets">
+        <button class="btn" data-mag="3.5" type="button">3.5</button>
+        <button class="btn" data-mag="4.2" type="button">4.2 suave</button>
+        <button class="btn" data-mag="5.4" type="button">5.4</button>
+        <button class="btn" data-mag="6.9" type="button">6.9 fuerte</button>
+        <button class="btn" data-mag="7.8" type="button">7.8 colapso</button>
+      </div>
+      <div class="row">
+        <label class="lab">Velocidad
+          <select id="selSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        </label>
+        <label class="lab">Calidad / personas
+          <select id="selQuality"><option value="baja">Baja · 24</option><option value="media" selected>Media · 36</option><option value="alta">Alta · 52</option></select>
+        </label>
+        <label class="lab">Ver piso
+          <select id="selFloorView"><option value="all" selected>Todos</option><option value="0">Piso 1</option><option value="1">Piso 2</option><option value="2">Piso 3</option><option value="3">Piso 4</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnPause" type="button">⏸ Pausa</button>
+        <button class="btn" id="btnReset" type="button">↻ Reiniciar</button>
+        <button class="btn danger" id="btnQuake" type="button">🌋 Disparar sismo</button>
+        <button class="btn warn" id="btnVoiceAlert" type="button" disabled>📢 Emitir alerta por voz</button>
+      </div>
+      <div class="row" aria-label="Fallas">
+        <button class="btn chip-fault" data-fault="sniffer" type="button" aria-pressed="false">🛠️ Sniffer dañado</button>
+        <button class="btn chip-fault" data-fault="nodeDown" type="button" aria-pressed="false">📴 Nodo caído</button>
+        <button class="btn chip-fault" data-fault="gatewayOut" type="button" aria-pressed="false">📡 Sin enlace gateway</button>
+        <button class="btn chip-fault" data-fault="macSat" type="button" aria-pressed="false">📶 MACs falsas</button>
+        <button class="btn chip-fault" data-fault="blackout" type="button" aria-pressed="false">🔌 Apagón</button>
+        <button class="btn chip-fault" data-fault="aftershock" type="button" aria-pressed="false">🔁 Réplica</button>
+      </div>
+    </section>
 
-  <footer class="dim-when-dark">
-    SISMO-ALERT · Juego demostrativo en Vanilla JS + Canvas, sin dependencias ·
-    <a href="https://github.com/NicolasHG2004/juegoDiseno" target="_blank" rel="noopener">Código en GitHub</a> ·
-    Publicado con GitHub Pages
-  </footer>
-</div>
+    <section class="card">
+      <h2><span class="dotlive">●</span> Detección en vivo (sniffers de techo)</h2>
+      <div class="metrics">
+        <div class="metric"><span class="k">Detectadas ahora</span><span class="v" id="mDetected">0</span></div>
+        <div class="metric"><span class="k">Evacuadas</span><span class="v" id="mEvacuated">0</span></div>
+        <div class="metric"><span class="k">Atrapadas (real)</span><span class="v" id="mTrapped">0</span></div>
+        <div class="metric"><span class="k">Precisión IA</span><span class="v" id="mPrecision">—</span></div>
+        <div class="metric"><span class="k">MACs filtradas</span><span class="v" id="mFiltered">0</span></div>
+        <div class="metric"><span class="k">Liberadas por ti</span><span class="v" id="mRescued">0</span></div>
+      </div>
+      <p style="color:var(--muted);font-size:.8rem;margin-top:8px">Haz clic en una persona, un sniffer o el gateway para inspeccionarlo. Acércate a una persona atrapada y pulsa <b>E</b> para liberarla.</p>
+    </section>
 
-<noscript><p style="text-align:center;padding:20px">Este juego necesita JavaScript activado. El dispositivo real, por suerte, no. 😉</p></noscript>
+    <section class="card">
+      <h2>💡 Gateway del poste · Panel del operario</h2>
+      <div id="opReport">Todavía no descargas el gateway. Ve al poste de luz, bájalo con la polea (<b>E</b>) y conéctalo (<b>E</b>).</div>
+      <ol id="priorityList"></ol>
+      <div class="row" style="margin-top:9px">
+        <button class="btn" id="btnDownload" type="button" disabled>⬇ Descargar reporte JSON</button>
+        <button class="btn" id="btnFinal" type="button">⬜ Reporte final e-ink</button>
+      </div>
+    </section>
 
-<script>
-'use strict';
-/* =====================================================================
-   SISMO-ALERT — juego de 90 s · Vanilla JS + Canvas · sin dependencias
-   Fases: ESCANEO → ONDA P (x2) → ONDA S → SISMO MAG 5.4 → CAJA NEGRA
-   (batería + LoRa) → DISPLAY E-INK final.
-   ===================================================================== */
-const W = 960, H = 600, GAME_LEN = 90;
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
-canvas.width = W * DPR; canvas.height = H * DPR;
+    <section class="card">
+      <h2>🔎 Selección</h2>
+      <div id="selInfo">Nada seleccionado. Las personas cambian de color según su estado.</div>
+      <div class="legend" style="margin-top:8px">
+        <span><span class="swatch" style="background:#38bdf8"></span>Detectada por un sniffer</span>
+        <span><span class="swatch" style="background:#94a3b8"></span>Sin detectar recientemente</span>
+        <span><span class="swatch" style="background:#34d399"></span>Evacuada / punto de encuentro</span>
+        <span><span class="swatch" style="background:#fb923c"></span>Atrapada — acércate y pulsa E</span>
+        <span><span class="swatch" style="background:#f87171"></span>Señal fantasma (MAC falsa)</span>
+      </div>
+    </section>
 
-const $ = id => document.getElementById(id);
-const hud = { time:$('hudTime'), score:$('hudScore'), gente:$('hudGente'), prec:$('hudPrecision'),
-              filt:$('hudFiltered'), fals:$('hudFalse'), fill:$('timerFill'), banner:$('banner'),
-              chipScore:$('chipScore'), chipTime:$('chipTime') };
-const btnPre = $('btnPreAlert'), btnPause = $('btnPause');
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    <section class="card">
+      <h2>📡 Sniffers del edificio</h2>
+      <div id="nodeList"></div>
+    </section>
 
-/* ---------- Asset héroe: modelo.jpg (ruta RELATIVA → funciona en /juegoDiseno/) ---------- */
-const hero = new Image();
-let heroReady = false;
-hero.onload = () => { heroReady = true; };
-hero.src = 'modelo.jpg';
-/* Recorte del dispositivo dentro del render 1920×1280 */
-const CROP = { sx: 395, sy: 85, sw: 1030, sh: 1030 };
+    <section class="card">
+      <h2>📜 Registro de eventos y voces</h2>
+      <div id="eventLog"></div>
+    </section>
 
-/* ---------- Audio (WebAudio, sin archivos) ---------- */
-let AC = null, soundOn = true, lastAlarmBeep = 0;
-function audio(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
-                  if(AC && AC.state==='suspended') AC.resume(); return AC; }
-function beep(freq, dur=0.08, type='sine', vol=0.12, delay=0){
-  if(!soundOn) return; const ac = audio(); if(!ac) return;
-  const t0 = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
-  o.type = type; o.frequency.value = freq;
-  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
-}
-const sfx = {
-  good(){ beep(880,.07,'sine',.10); beep(1318,.09,'sine',.07,.05); },
-  bad(){ beep(150,.18,'sawtooth',.12); },
-  filter(){ beep(520,.05,'triangle',.045); },
-  pwave(){ beep(660,.12,'square',.08); beep(660,.12,'square',.08,.18); beep(660,.12,'square',.08,.36); },
-  success(){ [523,659,784,1046].forEach((f,i)=>beep(f,.12,'sine',.1,i*.09)); },
-  link(){ beep(740,.09,'sine',.1); beep(1108,.14,'sine',.08,.07); },
-  fail(){ beep(220,.3,'sawtooth',.1); }
-};
+    <section class="card">
+      <h2>🎓 Cómo funciona el sistema real</h2>
+      <p style="color:var(--muted);font-size:.87rem">El sniffer escucha de forma pasiva señales Wi-Fi/BLE, filtra MACs aleatorias y cuenta personas sin cámaras. Su acelerómetro detecta la onda inicial y activa la <b style="color:#fff">alerta por voz</b>. Cada pocos segundos envía un snapshot al <b style="color:#fff">gateway del poste</b>, fuera del radio de caída. Aunque el sniffer quede sepultado, el rescatista baja el gateway y recupera el último conteo confiable.</p>
+      <p style="margin-top:8px;font-size:.87rem"><a href="clasico.html">Jugar la versión clásica 2D →</a> · <a href="https://github.com/NicolasHG2004/juegoDiseno" target="_blank" rel="noopener">Código en GitHub</a></p>
+    </section>
+  </aside>
+</main>
 
-/* ---------- Estado ---------- */
-const ZONE_NAMES = ['🍔 Food Court','🛍️ Tienda Norte','🚪 Entrada','🅿️ Parking'];
-let G;
-function freshState(){
-  return {
-    running:false, paused:false, over:false, t:0, score:0,
-    gente:0, tp:0, fp:0, filtered:0, missed:0,
-    mult:1, multUntil:0, preHits:0,
-    orbs:[], spawnIn:0, shake:0, ringFlashUntil:0, ringFlashColor:'#34d399',
-    zones: ZONE_NAMES.map(n=>({name:n, count:0, coverage:100})),
-    scanner:{ x:W/2, y:H-130, r:48, seen:false },
-    keys:{}, fired:{}, pWin:null, sWave:null,
-    blackbox:null, battery:100, loraDone:false, endAt:null,
-    pointerDown:false, trail:[], particles:[], dust:[], cracks:[]
-  };
-}
-G = freshState();
+<dialog id="finalModal">
+  <h2>⬜ Esto conserva el gateway para el rescatista</h2>
+  <div class="eink">
+    <div class="r"><span>GENTE (t0):</span><span id="fHabia">—</span></div>
+    <div class="r"><span>EVACUADAS:</span><span id="fEvac">—</span></div>
+    <div class="r"><span>POSIBLES DENTRO:</span><span id="fDentro">—</span></div>
+    <div class="r"><span>SISMICO:</span><span id="fSismico">OK</span></div>
+    <div class="r"><span>CONFIANZA:</span><span id="fConf">—</span></div>
+    <small>SISMO-ALERT · GATEWAY POSTE DE LUZ · CyT UNAL</small>
+  </div>
+  <div id="finalSummary"></div>
+  <div class="row">
+    <button class="btn primary" id="btnFinalClose" type="button">Seguir explorando / rescatando</button>
+    <button class="btn" id="btnFinalDownload" type="button">⬇ JSON del operario</button>
+  </div>
+</dialog>
 
-const zoneOf = (x,y) => (y >= H/2 ? 2 : 0) + (x >= W/2 ? 1 : 0);
-const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
-const precision = () => (G.tp + G.fp) === 0 ? 100 : (G.tp / (G.tp + G.fp)) * 100;
-const falsePct  = () => (G.tp + G.fp) === 0 ? 0 : (G.fp / (G.tp + G.fp)) * 100;
+<div id="xrOverlay" hidden><span class="xr-box" id="xrBox">SISMO-ALERT CyT · sigue las instrucciones por voz 🔊</span></div>
+<noscript><p style="padding:16px">Esta experiencia necesita JavaScript y WebGL. Puedes jugar la <a href="clasico.html">versión 2D clásica</a>.</p></noscript>
 
-function setBanner(html, cls=''){
-  hud.banner.className = cls; hud.banner.id = 'banner'; hud.banner.innerHTML = html;
-}
-
-/* ---------- Flujo de fases / eventos ---------- */
-function startPWave(big){
-  G.pWin = { endsAt: G.t + 3, big };
-  btnPre.disabled = false; btnPre.classList.add('armed');
-  btnPre.innerHTML = big ? '⚠ ¡PRE-ALERTA! — SISMO GRANDE EN 3 s' : '⚠ ¡PRE-ALERTA! — Onda S en 3 s';
-  setBanner(`🟡 <span>¡ONDA P DETECTADA por el acelerómetro MEMS! Pulsa <b>PRE-ALERTA</b> ahora (${big?'se viene el MAG 5.4':'sismo menor'})</span>`, 'pwave');
-  sfx.pwave();
-  if(navigator.vibrate) navigator.vibrate([60,40,60]);
-}
-function resolvePWave(success){
-  const big = G.pWin.big; G.pWin = null;
-  btnPre.disabled = true; btnPre.classList.remove('armed');
-  btnPre.innerHTML = '⚠ PRE-ALERTA <span style="font-weight:600;font-size:.72em">(esperando Onda P…)</span>';
-  if(success){
-    G.preHits++; G.score += 500; G.mult = 2; G.multUntil = G.t + 10;
-    G.ringFlashUntil = G.t + 1.2; G.ringFlashColor = '#34d399';
-    setBanner('🟢 <span><b>¡PRE-ALERTA ENVIADA!</b> +500 pts · Bonus ×2 por 10 s · La gente empieza a evacuar ANTES de la Onda S</span>', 'success');
-    sfx.success();
-  } else {
-    G.score = Math.max(0, G.score - 300);
-    setBanner('🔴 <span><b>¡Sin pre-alerta!</b> La Onda S golpea sin aviso: −300 pts. Esos 3 segundos eran la diferencia…</span>', 'swave');
-    sfx.fail(); if(navigator.vibrate) navigator.vibrate(250);
-  }
-  G.sWave = { until: G.t + (big ? 5 : 2.5), big, prepared: success };
-  G.cracks = G.cracks.concat(makeCracks(big ? 4 : 1)); /* el plano se agrieta con el golpe */
-  G.shake = reducedMotion ? 0 : (big ? 15 : (success ? 5 : 10));
-  lastAlarmBeep = 0;
-}
-function startBlackbox(){
-  G.orbs = []; G.battery = 100;
-  const N = (x,y,label)=>({x,y,label,linked:false});
-  const rnd = (a,b) => a + Math.random() * (b - a);
-  /* Ruta en ZIGZAG con posiciones irregulares que cambian en cada partida
-     (nada de filas/columnas rectas): arriba-izq. -> abajo-centro-der. ->
-     arriba-der. -> RESCATE abajo-izq. Solo 6 s de ventana LoRa. */
-  G.blackbox = { startedAt: G.t, deadline: G.t + 6, idx:0,
-    nodes:[ N(rnd(120,270), rnd(95,175),  'NODO 1'),
-            N(rnd(600,690), rnd(430,500), 'NODO 2'),
-            N(rnd(720,855), rnd(95,175),  'NODO 3'),
-            N(rnd(105,245), rnd(430,500), '✚ RESCATE') ] };
-  document.body.classList.add('blackout');
-  canvas.style.filter = 'grayscale(1) contrast(1.15)';
-  setBanner('⬛ MODO CAJA NEGRA · ⏱ ¡SOLO 6 SEGUNDOS de ventana LoRa! Une NODO 1 → 2 → 3 → ✚ RESCATE (ruta en zigzag) para enviar: GENTE ATRAPADA', 'blackbox');
-  sfx.fail(); setTimeout(()=>sfx.link(), 350);
-}
-function endGame(){
-  G.running = false; G.over = true;
-  document.body.classList.remove('blackout');
-  canvas.style.filter = 'grayscale(1) contrast(1.05) brightness(.85)';
-  const prec = precision();
-  $('einkGente').textContent = G.gente;
-  $('einkBat').textContent = Math.round(G.battery) + '%';
-  $('einkLora').textContent = G.loraDone ? 'ENVIADO ✓' : 'SIN ENVIO ✗';
-  $('finScore').textContent = Math.round(G.score).toLocaleString('es-CO');
-  $('finPrecision').textContent = prec.toFixed(1) + '%';
-  $('finFiltered').textContent = G.filtered;
-  $('finFalse').textContent = G.fp + ' (' + falsePct().toFixed(0) + '%)';
-  $('finPre').textContent = G.preHits + '/2';
-  $('finMissed').textContent = G.missed;
-  let rating = 'NODO EN ENTRENAMIENTO';
-  if(G.loraDone && prec >= 95) rating = '🏆 RESCATE HEROICO — DATO SALVAVIDAS ENVIADO';
-  else if(G.loraDone) rating = '🛟 RESCATE EFECTIVO — LoRa ENTREGÓ EL DATO';
-  else if(prec >= 90) rating = '📡 BUEN NODO — FALTÓ CERRAR LA RUTA LoRa';
-  $('finalRating').textContent = rating;
-  setBanner(G.loraDone
-    ? `⬛ <span><b>LORA: ENVIADO ✓</b> — Rescate ya sabe: <b>GENTE ATRAPADA: ${G.gente}</b>. Eso hace este dispositivo cuando todo lo demás falló.</span>`
-    : '⬛ <span>El dato quedó en el display e-ink, pero la ruta LoRa no se completó. ¡Inténtalo de nuevo!</span>', 'blackbox');
-  $('endScreen').hidden = false;
-  if(G.loraDone) sfx.success();
-}
-function startGame(){
-  G = freshState(); G.running = true;
-  document.body.classList.remove('blackout');
-  canvas.style.filter = '';
-  $('startScreen').hidden = true; $('endScreen').hidden = true;
-  btnPause.textContent = '⏸ Pausa';
-  setBanner('🛰️ <span>Escaneo activo — captura <b style="color:var(--blue)">azules</b>, filtra <b style="color:var(--red)">rojas</b> y visita las 4 zonas del mall.</span>');
-  audio();
-}
-
-/* ---------- Entrada: puntero + teclado ---------- */
-function toGame(e){
-  const r = canvas.getBoundingClientRect();
-  return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
-}
-canvas.addEventListener('pointermove', e => {
-  const p = toGame(e); G.scanner.x = p.x; G.scanner.y = p.y; G.scanner.seen = true;
-  if(G.pointerDown && G.blackbox) G.trail.push(p);
-});
-canvas.addEventListener('pointerdown', e => {
-  const p = toGame(e); G.scanner.x = p.x; G.scanner.y = p.y; G.scanner.seen = true;
-  G.pointerDown = true; G.trail = [p];
-  canvas.setPointerCapture && e.pointerId!==undefined && canvas.setPointerCapture(e.pointerId);
-});
-addEventListener('pointerup', () => { G.pointerDown = false; if(!G.loraDone) G.trail = []; });
-addEventListener('keydown', e => {
-  G.keys[e.key] = true;
-  if(e.code === 'Space'){ e.preventDefault(); pressPreAlert(); }
-  if(e.key === 'p' || e.key === 'P') togglePause();
-});
-addEventListener('keyup', e => { G.keys[e.key] = false; });
-
-function pressPreAlert(){ if(G.running && G.pWin) resolvePWave(true); }
-btnPre.addEventListener('click', pressPreAlert);
-function togglePause(){
-  if(!G.running) return;
-  G.paused = !G.paused;
-  btnPause.textContent = G.paused ? '▶ Reanudar' : '⏸ Pausa';
-  if(G.paused) setBanner('⏸ <span>Juego en pausa. El sismo, por desgracia, no hace pausas…</span>');
-}
-btnPause.addEventListener('click', togglePause);
-$('btnRestart').addEventListener('click', startGame);
-$('btnStart').addEventListener('click', startGame);
-$('btnAgain').addEventListener('click', startGame);
-$('btnSound').addEventListener('click', function(){
-  soundOn = !soundOn; this.textContent = soundOn ? '🔊 Sonido' : '🔇 Silencio';
-  this.setAttribute('aria-pressed', String(soundOn)); if(soundOn) sfx.filter();
-});
-document.addEventListener('visibilitychange', () => { if(document.hidden && G.running && !G.paused) togglePause(); });
-
-/* ---------- Lógica ---------- */
-/* Las señales entran desde los 4 lados del mall (arriba, abajo, izquierda,
-   derecha) para que las 4 zonas reciban gente por igual: si todo cayera
-   desde arriba, las zonas superiores capturarían casi todo primero.
-   Carriles que evitan la columna/fila del dispositivo central. */
-function spawnOrb(){
-  /* MODO PESADILLA: más señales falsas, más velocidad y vida útil de solo
-     3-4 s por circulito: si no lo capturas (o lo dejas filtrar) a tiempo, expira. */
-  const red = Math.random() < (G.t < 30 ? 0.38 : 0.48);
-  const sp = 150 + G.t*1.5 + Math.random()*55;
-  const ttl = G.t < 30 ? 3.4 + Math.random()*0.6 : 3.0 + Math.random()*0.7;
-  const laneX = () => Math.random() < 0.5 ? 34 + Math.random()*300 : 626 + Math.random()*300; /* columnas laterales */
-  const laneY = () => Math.random() < 0.5 ? 36 + Math.random()*124 : 440 + Math.random()*124; /* filas sup./inf. */
-  const dir = Math.floor(Math.random() * 4); /* 0 abajo↓ · 1 arriba↑ · 2 derecha→ · 3 izquierda← */
-  let x, y, vx = 0, vy = 0;
-  if(dir === 0){ x = laneX(); y = -24;   vy =  sp; }
-  else if(dir === 1){ x = laneX(); y = H+24; vy = -sp; }
-  else if(dir === 2){ x = -24;   y = laneY(); vx =  sp * 1.35; } /* el eje horizontal es más largo */
-  else { x = W+24; y = laneY(); vx = -sp * 1.35; }
-  G.orbs.push({ x, y, vx, vy, age:0, ttl, r:14 + Math.random()*5, red, wob: Math.random()*Math.PI*2 });
-}
-/* Grietas en el plano cuando golpea la Onda S (persisten en modo caja negra) */
-function makeCracks(n){
-  const cracks = [];
-  for(let i = 0; i < n; i++){
-    let px = W/2 + (Math.random()-.5)*320, py = H/2 + (Math.random()-.5)*260;
-    let ang = Math.random() * Math.PI * 2;
-    const pts = [[px,py]], segs = 6 + Math.floor(Math.random()*4);
-    for(let s = 0; s < segs; s++){
-      ang += (Math.random()-.5) * 1.1;
-      px += Math.cos(ang) * (26 + Math.random()*42);
-      py += Math.sin(ang) * (26 + Math.random()*42);
-      pts.push([clamp(px, 18, W-18), clamp(py, 18, H-18)]);
-    }
-    cracks.push(pts);
-  }
-  return cracks;
-}
-function burst(x,y,color,n=10){
-  for(let i=0;i<n;i++) G.particles.push({x,y,vx:(Math.random()-.5)*220,vy:(Math.random()-.5)*220,life:.5,color});
-}
-function update(dt){
-  G.t += dt;
-  const t = G.t;
-  if(G.multUntil && t >= G.multUntil){ G.mult = 1; G.multUntil = 0; }
-
-  /* Cronología de eventos (90 s) */
-  const fire = (key, at, fn) => { if(!G.fired[key] && t >= at){ G.fired[key] = true; fn(); } };
-  fire('p1', 26, () => startPWave(false));
-  fire('p2', 58, () => startPWave(true));
-  fire('hint1', 12, () => { if(!G.pWin && !G.sWave) setBanner('📡 <span>El acelerómetro MEMS está escuchando… la primera Onda P puede llegar en cualquier momento.</span>'); });
-  fire('hint2', 44, () => { if(!G.pWin && !G.sWave) setBanner('⚠️ <span>Actividad sísmica en aumento. Mantén la precisión IA sobre <b>95%</b> y las 4 zonas cubiertas.</span>'); });
-
-  if(G.pWin && t >= G.pWin.endsAt) resolvePWave(false);
-  if(G.pWin){
-    const left = Math.max(0, G.pWin.endsAt - t);
-    btnPre.innerHTML = `⚠ ¡PRE-ALERTA! — ${G.pWin.big ? 'MAG 5.4' : 'Onda S'} en ${left.toFixed(1)} s`;
-  }
-
-  if(G.sWave){
-    G.shake = reducedMotion ? 0 : (G.sWave.big ? 15 : (G.sWave.prepared ? 5 : 10));
-    if(t - lastAlarmBeep > 0.45){ lastAlarmBeep = t; beep(G.sWave.big?980:840,.14,'square',.06); }
-    if(t >= G.sWave.until){
-      const wasBig = G.sWave.big; G.sWave = null; G.shake = 0;
-      if(wasBig){ startBlackbox(); }
-      else if(!G.pWin) setBanner('🛰️ <span>Sismo menor superado. Sigue escaneando: el grande aún no llega…</span>');
-    }
-  } else if(!G.pWin) G.shake = 0;
-
-  /* Teclado → escáner */
-  const KS = 430 * dt, s = G.scanner;
-  if(G.keys['ArrowLeft'])  s.x -= KS; if(G.keys['ArrowRight']) s.x += KS;
-  if(G.keys['ArrowUp'])    s.y -= KS; if(G.keys['ArrowDown'])  s.y += KS;
-  s.x = clamp(s.x, 20, W-20); s.y = clamp(s.y, 20, H-20);
-  /* INTERFERENCIA SÍSMICA: durante la Onda S el radio de detección se encoge */
-  const targetR = G.sWave ? (G.sWave.big ? 24 : 30) : 48;
-  s.r += (targetR - s.r) * Math.min(1, dt * 5);
-
-  /* Cobertura por zonas */
-  const zi = zoneOf(s.x, s.y);
-  G.zones.forEach((z,i) => {
-    const recharge = G.sWave ? 26 : 42, decay = G.sWave ? -11 : -5.4; /* en el sismo cuesta el doble mantener cobertura */
-    z.coverage = clamp(z.coverage + (i === zi && !G.blackbox ? recharge*dt : decay*dt), 0, 100);
-    if(z.coverage <= 0 && !G.blackbox) G.score = Math.max(0, G.score - 4*dt);
-  });
-
-  /* Orbes */
-  if(!G.blackbox){
-    G.spawnIn -= dt;
-    const interval = t < 30 ? 0.50 : 0.38;
-    if(G.spawnIn <= 0){ spawnOrb(); G.spawnIn = interval * (0.75 + Math.random()*0.5); }
-  }
-  for(let i = G.orbs.length-1; i >= 0; i--){
-    const o = G.orbs[i];
-    o.wob += dt*3; o.age += dt;
-    /* movimiento según su dirección de entrada + vaivén perpendicular */
-    const boost = G.sWave ? 1.25 : 1;
-    o.x += o.vx * boost * dt; o.y += o.vy * boost * dt;
-    if(o.vy !== 0) o.x += Math.sin(o.wob) * 14 * dt; else o.y += Math.sin(o.wob) * 14 * dt;
-    if(G.sWave){ o.x += (Math.random()-.5) * 95 * dt; o.y += (Math.random()-.5) * 95 * dt; } /* señal errática en el sismo */
-    const d = Math.hypot(o.x - s.x, o.y - s.y);
-    if(!G.blackbox && d < s.r + o.r*0.45){
-      if(o.red){ G.fp++; G.score = Math.max(0, G.score - 150); burst(o.x,o.y,'#f87171',12); sfx.bad(); }
-      else{
-        G.tp++; G.gente++; G.zones[zoneOf(o.x,o.y)].count++;
-        G.score += 100 * G.mult; burst(o.x,o.y,'#38bdf8',10); sfx.good();
-      }
-      G.orbs.splice(i,1); continue;
-    }
-    if(o.age >= o.ttl || o.y > H + 26 || o.y < -26 || o.x < -26 || o.x > W + 26){ /* expira o sale por cualquier lado */
-      if(o.red){ G.filtered++; G.score += 10; sfx.filter(); }
-      else{ G.missed++; G.score = Math.max(0, G.score - 25); }
-      G.orbs.splice(i,1);
-    }
-  }
-
-  /* Partículas */
-  for(let i = G.particles.length-1; i >= 0; i--){
-    const p = G.particles[i]; p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt;
-    if(p.life <= 0) G.particles.splice(i,1);
-  }
-  /* Polvo del sismo: durante la Onda S nubla el tablero y cuesta ver las señales */
-  if(G.sWave && Math.random() < dt*45)
-    G.dust.push({ x:Math.random()*W, y:Math.random()*H, r:22+Math.random()*55, life:1.3, vx:(Math.random()-.5)*24 });
-  for(let i = G.dust.length-1; i >= 0; i--){
-    const d = G.dust[i]; d.x += d.vx*dt; d.life -= dt;
-    if(d.life <= 0) G.dust.splice(i,1);
-  }
-
-  /* Caja negra: batería + ruta LoRa */
-  if(G.blackbox){
-    G.battery = Math.max(80, 100 - (t - G.blackbox.startedAt) * 1.8);
-    const bb = G.blackbox, target = bb.nodes[bb.idx];
-    if(!G.loraDone && t >= bb.deadline) endGame(); /* se cerró la ventana LoRa de 6 s */
-    if(target){
-      const near = (p) => Math.hypot(p.x-target.x, p.y-target.y) < 32; /* enlace más preciso */
-      if(near(s) || G.trail.some(near)){
-        target.linked = true; bb.idx++; G.score += 250; burst(target.x,target.y,'#ffffff',16); sfx.link();
-        if(bb.idx >= bb.nodes.length){
-          G.loraDone = true; G.score += 1000; G.endAt = t + 2.6;
-          setBanner(`⬛ LORA MESH ✓ — ENVIANDO: <b>GENTE ATRAPADA: ${G.gente}</b> → ✚ RESCATE`, 'blackbox');
-          sfx.success(); if(navigator.vibrate) navigator.vibrate([80,60,80]);
-        } else {
-          setBanner(`⬛ ${target.label} ENLAZADO ✓ (${bb.idx}/4) — siguiente: ${bb.nodes[bb.idx].label} · BATERÍA ${Math.round(G.battery)}%`, 'blackbox');
-        }
-        G.trail = [];
-      }
-    }
-    if(G.endAt && t >= G.endAt) endGame();
-  }
-  if(t >= GAME_LEN) endGame();
-}
-
-/* ---------- Dibujo ---------- */
-function ringColor(){
-  if(G.t < G.ringFlashUntil) return G.ringFlashColor;
-  if(G.blackbox) return '#f8fafc';
-  if(G.sWave) return '#ef4444';
-  if(G.pWin) return '#facc15';
-  return '#22d3ee';
-}
-function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
-
-function drawMall(){
-  const bb = !!G.blackbox;
-  ctx.fillStyle = bb ? '#050505' : '#0a1526'; ctx.fillRect(0,0,W,H);
-  /* cuadrantes = zonas + mapa de calor según gente */
-  const rects = [[0,0],[W/2,0],[0,H/2],[W/2,H/2]];
-  G.zones.forEach((z,i) => {
-    const [x,y] = rects[i];
-    const heat = clamp(z.count / 26, 0, 1);
-    ctx.fillStyle = bb ? '#0a0a0a' : `rgba(${40+heat*180|0},${90+heat*60|0},${200-heat*120|0},${0.10 + heat*0.20})`;
-    ctx.fillRect(x,y,W/2,H/2);
-  });
-  /* plano: muros / locales */
-  ctx.strokeStyle = bb ? '#2a2a2a' : '#223453'; ctx.lineWidth = 2;
-  ctx.strokeRect(14,14,W-28,H-28);
-  ctx.beginPath(); ctx.moveTo(W/2,14); ctx.lineTo(W/2,H-14); ctx.moveTo(14,H/2); ctx.lineTo(W-14,H/2); ctx.stroke();
-  ctx.lineWidth = 1; ctx.strokeStyle = bb ? '#1c1c1c' : 'rgba(56,86,145,.5)';
-  [[60,70,90,54],[210,60,120,44],[620,66,130,50],[800,180,96,60],[64,400,110,56],[250,470,120,48],[610,420,90,90],[780,400,110,52],
-   [70,190,70,50]].forEach(([x,y,w,h]) => ctx.strokeRect(x,y,w,h));
-  /* grietas del sismo sobre el plano (quedan marcadas hasta el final) */
-  if(G.cracks.length){
-    ctx.strokeStyle = bb ? '#3f3f46' : 'rgba(148,163,184,.55)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-    G.cracks.forEach(pts => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); pts.forEach(p => ctx.lineTo(p[0], p[1])); ctx.stroke(); });
-  }
-  /* etiquetas + contador + cobertura: cada zona anclada a su esquina EXTERIOR
-     del plano, lejos del dispositivo central (x 365-595 · y 185-417), para que
-     la imagen del equipo nunca tape un nombre (antes Parking quedaba detrás). */
-  const anchors = [
-    { x: 24,   y: 22,   align: 'left'  },  /* Food Court   ↖ */
-    { x: W-24, y: 22,   align: 'right' },  /* Tienda Norte ↗ */
-    { x: 24,   y: H-86, align: 'left'  },  /* Entrada      ↙ */
-    { x: W-24, y: H-86, align: 'right' }   /* Parking      ↘ */
-  ];
-  ctx.textBaseline = 'top';
-  G.zones.forEach((z,i) => {
-    const a = anchors[i], lx = a.x, ly = a.y, right = a.align === 'right';
-    ctx.textAlign = a.align;
-    ctx.font = '700 15px system-ui,sans-serif';
-    ctx.fillStyle = bb ? '#9ca3af' : '#cbd5e1';
-    ctx.fillText(z.name, lx, ly);
-    ctx.font = '700 13px ui-monospace,monospace';
-    ctx.fillStyle = bb ? '#e5e7eb' : '#7dd3fc';
-    ctx.fillText('GENTE: ' + z.count, lx, ly + 21);
-    /* cobertura (la barra se alinea con el borde exterior de su etiqueta) */
-    const bw = 108, cov = z.coverage, barX = right ? lx - bw : lx;
-    ctx.fillStyle = 'rgba(2,8,20,.65)'; rr(barX, ly+42, bw, 8, 4); ctx.fill();
-    ctx.fillStyle = bb ? '#9ca3af' : (cov > 45 ? '#22d3ee' : cov > 20 ? '#facc15' : '#ef4444');
-    if(cov > 0){ rr(barX, ly+42, bw*cov/100, 8, 4); ctx.fill(); }
-    ctx.font = '600 9px system-ui,sans-serif'; ctx.fillStyle = bb ? '#6b7280' : '#64748b';
-    ctx.fillText('COBERTURA', lx, ly + 53);
-    if(cov < 20 && !bb && G.running){
-      ctx.font = '800 12px system-ui,sans-serif'; ctx.fillStyle = (Math.sin(performance.now()/130) > 0) ? '#f87171' : '#7f1d1d';
-      if(right){ ctx.textAlign = 'right'; ctx.fillText('⚠ SIN COBERTURA', barX - 10, ly + 40); ctx.textAlign = a.align; }
-      else ctx.fillText('⚠ SIN COBERTURA', lx + 118, ly + 40);
-    }
-  });
-  ctx.textAlign = 'left';
-}
-
-function drawOrb(o, now){
-  /* INTERFERENCIA SÍSMICA: en plena Onda S la señal parpadea y a ratos se
-     "pierde" (gris, sin icono): no sabes si es persona o MAC falsa. */
-  const lost = !!G.sWave && Math.sin(now/90 + o.wob*2.7) < -0.72;
-  const c = lost ? '#94a3b8' : (o.red ? '#ef4444' : '#38bdf8');
-  ctx.save();
-  /* se desvanece en su último tramo de vida (aviso visual de expiración) */
-  const remainT = o.ttl - o.age;
-  let alpha = remainT < 0.85 ? clamp(remainT / 0.85, 0.16, 1) : 1;
-  if(G.sWave) alpha *= 0.45 + 0.55 * Math.abs(Math.sin(now/70 + o.wob*3));
-  ctx.globalAlpha = alpha;
-  ctx.shadowColor = c; ctx.shadowBlur = 16;
-  ctx.fillStyle = c; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7); ctx.fill();
-  ctx.shadowBlur = 0;
-  if(lost){
-    ctx.fillStyle = '#0b1220'; ctx.font = '800 ' + (o.r|0) + 'px ui-monospace,monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', o.x, o.y + 1);
-  } else if(o.red){
-    ctx.strokeStyle = 'rgba(248,113,113,.85)'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
-    ctx.beginPath(); ctx.arc(o.x,o.y,o.r+6, o.wob, o.wob+7); ctx.stroke(); ctx.setLineDash([]);
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    const k = o.r*0.45;
-    ctx.beginPath(); ctx.moveTo(o.x-k,o.y-k); ctx.lineTo(o.x+k,o.y+k);
-    ctx.moveTo(o.x+k,o.y-k); ctx.lineTo(o.x-k,o.y+k); ctx.stroke();
-  } else {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(o.x, o.y - o.r*0.28, o.r*0.30, 0, 7); ctx.fill();           /* cabeza */
-    ctx.beginPath(); ctx.arc(o.x, o.y + o.r*0.62, o.r*0.52, Math.PI, 0); ctx.fill();     /* hombros */
-    ctx.strokeStyle = 'rgba(125,211,252,.8)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(o.x,o.y,o.r+6, o.wob, o.wob+4.2); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawDevice(now){
-  const cx = W/2, cy = H/2, S = 232;
-  let ox = 0, oy = 0;
-  if(G.pWin && !reducedMotion){ ox = (Math.random()-.5)*3.2; oy = (Math.random()-.5)*3.2; }  /* vibración micro Onda P */
-  const x = cx - S/2 + ox, y = cy - S/2 + oy;
-  const col = ringColor();
-  /* halo + anillo LED (la UI de estado) */
-  const pulse = 0.72 + Math.sin(now/340) * 0.28;
-  ctx.save();
-  ctx.shadowColor = col; ctx.shadowBlur = G.sWave ? 42 : 26;
-  ctx.globalAlpha = G.pWin || G.sWave ? pulse : 0.95;
-  ctx.strokeStyle = col; ctx.lineWidth = 5;
-  rr(x-7, y-7, S+14, S+14, 36); ctx.stroke();
-  ctx.restore();
-  /* modelo.jpg como héroe central */
-  ctx.save(); rr(x,y,S,S,30); ctx.clip();
-  if(heroReady){
-    ctx.drawImage(hero, CROP.sx, CROP.sy, CROP.sw, CROP.sh, x, y, S, S);
-  } else { /* respaldo vectorial si la imagen no cargó */
-    ctx.fillStyle = '#f1f5f9'; ctx.fillRect(x,y,S,S);
-    ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(cx+ox, cy-18+oy, 42, 0, 7); ctx.fill();
-    ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(cx+ox, cy-18+oy, 30, 0, 7); ctx.fill();
-  }
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; rr(x,y,S,S,30); ctx.stroke();
-  /* mini display e-ink EN VIVO sobre el dispositivo */
-  const dw = 172, dh = 52, dx = cx - dw/2 + ox, dy = cy + 58 + oy;
-  ctx.fillStyle = '#f4f1e6'; rr(dx,dy,dw,dh,8); ctx.fill();
-  ctx.strokeStyle = '#111'; ctx.lineWidth = 2; rr(dx,dy,dw,dh,8); ctx.stroke();
-  ctx.fillStyle = '#111'; ctx.font = '700 15px ui-monospace,monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  const sismico = (G.sWave || G.blackbox) ? 'ALERTA' : G.pWin ? 'ONDA-P!' : 'OK';
-  ctx.fillText('GENTE: ' + G.gente, dx+10, dy+6);
-  ctx.fillText(G.blackbox ? ('BAT:' + Math.round(G.battery) + '% LORA:' + (G.loraDone ? 'OK' : '...')) : ('SISMICO: ' + sismico), dx+10, dy+27);
-  /* rótulo */
-  ctx.font = '800 11px system-ui,sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = G.blackbox ? '#e5e7eb' : col;
-  ctx.fillText(G.blackbox ? '⬛ CAJA NEGRA · BATERÍA 48H' : 'SISMO-ALERT · NODO CENTRAL', cx+ox, y - 20);
-}
-
-function drawScanner(now){
-  const s = G.scanner;
-  if(G.blackbox){
-    /* cursor de trazado LoRa */
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(s.x,s.y,12,0,7); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(s.x-18,s.y); ctx.lineTo(s.x+18,s.y); ctx.moveTo(s.x,s.y-18); ctx.lineTo(s.x,s.y+18); ctx.stroke();
-    return;
-  }
-  const col = ringColor();
-  ctx.save();
-  ctx.strokeStyle = col; ctx.globalAlpha = .9; ctx.lineWidth = 2.5; ctx.setLineDash([10,8]);
-  ctx.lineDashOffset = -now/28;
-  ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.stroke(); ctx.setLineDash([]);
-  ctx.globalAlpha = .13; ctx.fillStyle = col;
-  ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill();
-  ctx.globalAlpha = .9; ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(s.x-s.r-8,s.y); ctx.lineTo(s.x-s.r+14,s.y); ctx.moveTo(s.x+s.r-14,s.y); ctx.lineTo(s.x+s.r+8,s.y);
-  ctx.moveTo(s.x,s.y-s.r-8); ctx.lineTo(s.x,s.y-s.r+14); ctx.moveTo(s.x,s.y+s.r-14); ctx.lineTo(s.x,s.y+s.r+8); ctx.stroke();
-  ctx.font = '800 10px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillStyle = col; ctx.fillText(G.sWave ? 'ESCÁNER · INTERFERENCIA' : 'ESCÁNER', s.x, s.y + s.r + 10);
-  ctx.restore();
-}
-
-function drawBlackbox(now){
-  const bb = G.blackbox, cx = W/2, cy = H/2;
-  /* líneas ya enlazadas */
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
-  ctx.beginPath(); ctx.moveTo(cx,cy);
-  bb.nodes.forEach(n => { if(n.linked) ctx.lineTo(n.x,n.y); });
-  ctx.stroke(); ctx.shadowBlur = 0;
-  /* guía punteada al siguiente */
-  const target = bb.nodes[bb.idx];
-  if(target){
-    const prev = bb.idx === 0 ? {x:cx,y:cy} : bb.nodes[bb.idx-1];
-    ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([6,8]); ctx.lineDashOffset = -now/35;
-    ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(target.x,target.y); ctx.stroke(); ctx.setLineDash([]);
-  }
-  /* estela del trazado */
-  if(G.trail.length > 1){
-    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(G.trail[0].x, G.trail[0].y);
-    G.trail.forEach(p => ctx.lineTo(p.x,p.y)); ctx.stroke();
-  }
-  /* nodos */
-  bb.nodes.forEach((n,i) => {
-    const isTarget = i === bb.idx;
-    const pulse = isTarget ? 15 + Math.sin(now/160)*5 : 13;
-    ctx.fillStyle = n.linked ? '#fff' : '#111';
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(n.x,n.y,pulse,0,7); ctx.fill(); ctx.stroke();
-    if(isTarget){ ctx.globalAlpha = .5; ctx.beginPath(); ctx.arc(n.x,n.y,pulse+13,0,7); ctx.stroke(); ctx.globalAlpha = 1; }
-    ctx.font = '800 12px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillStyle = '#fff'; ctx.fillText(n.label + (n.linked ? ' ✓' : ''), n.x, n.y + pulse + 7);
-  });
-  /* cuenta regresiva de la ventana LoRa (parpadea en rojo los últimos 2 s) */
-  const remainBB = Math.max(0, bb.deadline - G.t);
-  ctx.font = '800 26px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillStyle = (!G.loraDone && remainBB < 2 && Math.sin(now/120) > 0) ? '#f87171' : '#ffffff';
-  ctx.fillText(G.loraDone ? '✓ DATO ENVIADO' : '⏱ VENTANA LoRa: ' + remainBB.toFixed(1) + ' s', W/2, 92);
-  /* batería */
-  ctx.font = '700 14px ui-monospace,monospace'; ctx.textAlign = 'left';
-  ctx.fillStyle = '#fff';
-  /* centrado abajo: no choca con las etiquetas de Entrada/Parking en las esquinas */
-  ctx.textAlign = 'center';
-  ctx.fillText('🔋 BATERÍA: ' + Math.round(G.battery) + '% · 48H · LoRa MESH · GENTE ATRAPADA: ' + G.gente, W/2, H - 38);
-  ctx.textAlign = 'left';
-}
-
-function draw(now){
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(G.shake) ctx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
-  drawMall();
-  if(G.blackbox) drawBlackbox(now);
-  G.orbs.forEach(o => drawOrb(o, now));
-  /* polvo sísmico sobre las señales (el dispositivo se dibuja encima: él sí sigue viendo) */
-  G.dust.forEach(d => {
-    const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r);
-    const a = clamp(d.life, 0, 1) * 0.30;
-    g.addColorStop(0, 'rgba(203,213,225,' + a + ')'); g.addColorStop(1, 'rgba(203,213,225,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 7); ctx.fill();
-  });
-  /* las luces del mall parpadean en el sismo grande, antes del apagón total */
-  if(G.sWave && G.sWave.big){
-    ctx.fillStyle = 'rgba(0,0,0,' + (0.16 + 0.20 * Math.abs(Math.sin(now/110))).toFixed(3) + ')';
-    ctx.fillRect(0, 0, W, H);
-  }
-  G.particles.forEach(p => { ctx.globalAlpha = clamp(p.life*2,0,1); ctx.fillStyle = p.color;
-                             ctx.fillRect(p.x-2,p.y-2,4,4); ctx.globalAlpha = 1; });
-  drawDevice(now);
-  if(G.running || G.blackbox) drawScanner(now);
-  /* cuenta regresiva Onda P sobre el anillo */
-  if(G.pWin){
-    const left = Math.max(0, G.pWin.endsAt - G.t);
-    ctx.font = '800 30px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillStyle = '#fde68a'; ctx.shadowColor = '#facc15'; ctx.shadowBlur = 16;
-    ctx.fillText('ONDA S: ' + left.toFixed(1), W/2, 122); ctx.shadowBlur = 0;
-  }
-  if(G.sWave){
-    ctx.font = '800 30px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillStyle = '#fecaca'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 18;
-    ctx.fillText(G.sWave.big ? '💥 SISMO MAG 5.4 💥' : '💥 ONDA S 💥', W/2, 122); ctx.shadowBlur = 0;
-    ctx.font = '800 15px ui-monospace,monospace'; ctx.textBaseline = 'top'; ctx.fillStyle = '#fca5a5';
-    ctx.fillText('⚡ INTERFERENCIA SÍSMICA · señal débil · radio de escaneo reducido', W/2, 130);
-  }
-  if(!G.running && !G.over){
-    ctx.font = '700 13px ui-monospace,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(147,164,189,.9)';
-    ctx.fillText('· MODO DEMO · anillo LED en reposo ·', W/2, H - 34);
-  }
-}
-
-/* ---------- HUD ---------- */
-function renderHUD(){
-  const remain = Math.max(0, GAME_LEN - G.t);
-  hud.time.textContent = remain.toFixed(1);
-  hud.score.textContent = (Math.round(G.score)).toLocaleString('es-CO') + (G.mult > 1 ? ' ×2' : '');
-  hud.gente.textContent = G.gente;
-  const p = precision();
-  hud.prec.textContent = p.toFixed(1) + '%';
-  hud.prec.className = 'v ' + (p >= 95 ? 'good' : p >= 85 ? 'warn' : 'bad');
-  hud.filt.textContent = G.filtered;
-  hud.fals.textContent = falsePct().toFixed(0) + '%';
-  hud.fill.style.width = (remain / GAME_LEN * 100) + '%';
-  hud.fill.classList.toggle('danger', remain < 25 || !!G.sWave);
-  hud.chipTime.classList.toggle('alert', !!G.sWave);
-  hud.chipScore.classList.toggle('boost', G.mult > 1);
-}
-
-/* ---------- Bucle principal ---------- */
-let last = performance.now();
-function loop(now){
-  const dt = Math.min((now - last) / 1000, 0.05); last = now;
-  if(G.running && !G.paused) update(dt);
-  draw(now); renderHUD();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-</script>
+<script src="js/sim-core.js"></script>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<script type="module" src="js/app3d.js"></script>
 </body>
 </html>
