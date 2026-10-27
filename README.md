@@ -14,7 +14,7 @@ por zonas y modo caja negra con batería de 48 h + LoRa Mesh.
 
 | Mecánica (función real) | En el juego |
 |---|---|
-| 🧠 **Filtrado IA de MACs falsas** | Captura orbes **azules** (MAC válida = persona, +100). Deja pasar los **rojos** (MAC aleatoria iOS): la IA los filtra (+10). Tocarlos = falso positivo (−150) y cae tu **Precisión IA**. |
+| 🧠 **Filtrado IA de MACs falsas** | Captura orbes **azules** (MAC válida = persona, +100) que entran desde **los 4 lados** del mall (arriba, abajo, izquierda, derecha), para que todas las zonas reciban señales por igual. Deja pasar los **rojos** (MAC aleatoria iOS): la IA los filtra (+10). Tocarlos = falso positivo (−150) y cae tu **Precisión IA**. |
 | 🌊 **Alerta temprana Onda P** | El MEMS detecta la Onda P **3 s antes** de la Onda S: el anillo LED se pone **amarillo** y el dispositivo vibra. Pulsa **PRE-ALERTA** (o `Espacio`) → +500 y bonus ×2. |
 | 🗺️ **Red de nodos / mapa de calor** | El plano del mall tiene 4 zonas (Food Court, Tienda Norte, Entrada, Parking) con contador y cobertura que decae: mueve el escáner para balancearlas. |
 | ⬛ **Caja negra: batería 48 h + LoRa** | Tras el sismo **MAG 5.4** se va la luz (modo e-ink B/N). Traza la ruta LoRa uniendo **3 nodos → ✚ RESCATE** para enviar `GENTE ATRAPADA: N`. |
